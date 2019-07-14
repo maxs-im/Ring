@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
+#include <vector>
 
 using boost::asio::ip::tcp;
 
