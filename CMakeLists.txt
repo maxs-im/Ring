@@ -3,8 +3,8 @@ project(Ring)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Ring_Client client.cpp)
-add_executable(Ring_Server server.cpp)
+add_executable(Ring_Client client.cpp message.h)
+add_executable(Ring_Server server.cpp message.h)
 
 find_package(Boost 1.65.1.0 REQUIRED system thread)
 message(status "** Boost Include: ${Boost_INCLUDE_DIR}")
