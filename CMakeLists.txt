@@ -3,7 +3,8 @@ project(Ring)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Ring main.cpp)
+add_executable(Client client.cpp)
+add_executable(Server server.cpp)
 
 find_package(Boost 1.65.1.0 REQUIRED system)
 message(status "** Boost Include: ${Boost_INCLUDE_DIR}")
@@ -18,5 +19,6 @@ IF (Boost_FOUND)
     set(Boost_USE_STATIC_RUNTIME     OFF)
     set(BOOST_ALL_DYN_LINK           ON)   # force dynamic linking for all libraries
 
-    target_link_libraries(Ring ${Boost_LIBRARIES})
+    target_link_libraries(Client ${Boost_LIBRARIES})
+    target_link_libraries(Server ${Boost_LIBRARIES})
 ENDIF()
