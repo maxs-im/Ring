@@ -1,8 +1,28 @@
 #include <iostream>
+#include <deque>
 #include <thread>
 #include <boost/asio.hpp>
+#include "notification.hpp"
 
 using boost::asio::ip::tcp;
+
+namespace console {
+    Notification read_credentials() {
+        std::string login, password;
+        std::cout << "Login: ";
+        while (login.empty()) std::getline(std::cin, login);
+
+        std::cout << "Password: ";
+        std::getline(std::cin, password);
+
+        return {login, "credentials", password};
+    }
+
+    void print_notification(std::string message) {
+        std::cout << message << "\n";
+    }
+}
+
 
 class chat_client
 {
@@ -12,7 +32,20 @@ public:
             : io_service_(io_service),
               socket_(io_service)
     {
-        do_connect(endpoint_iterator);
+        do_connect(std::move(endpoint_iterator));
+    }
+
+    void write(const Notification& ntf) {
+        io_service_.post(
+                [this, ntf]()
+                {
+                    bool write_in_progress = !ntfs_write.empty();
+                    ntfs_write.push_back(ntf);
+                    if (!write_in_progress)
+                    {
+                        do_write();
+                    }
+                });
     }
 
     void close()
@@ -22,15 +55,72 @@ public:
 private:
     void do_connect(tcp::resolver::iterator endpoint_iterator)
     {
-        boost::asio::async_connect(socket_, endpoint_iterator,
-                [](boost::system::error_code ec, tcp::resolver::iterator)
+        boost::asio::async_connect(socket_, std::move(endpoint_iterator),
+                [this](boost::system::error_code ec, tcp::resolver::iterator)
                 {
                     if (!ec)
                     {
-                        // TODO: read logic
+                        read_notifications();
                     }
                 });
     }
+
+    void read_notifications() {
+        boost::asio::async_read_until(socket_, buffer_, Notification::DELIMITER,
+                [this](boost::system::error_code ec, std::size_t /*length*/)
+                {
+                    if (!ec)
+                    {
+                        bool leave;
+                        try {
+                            std::string str(
+                                    (std::istreambuf_iterator<char>(&buffer_)),
+                                    std::istreambuf_iterator<char>());
+
+                            ntf.update(str);
+                            leave = ntf.is_system() && ntf.is_banned();
+                            console::print_notification(ntf.get_message());
+                        }
+                        catch (...) {
+                            leave = true;
+                            console::print_notification("Smth goes wrong with receiving");
+                        }
+
+                        if (leave) {
+                            socket_.close();
+                        } else {
+                            read_notifications();
+                        }
+                    } else {
+                        socket_.close();
+                    }
+                });
+    }
+
+    void do_write() {
+        auto new_message = ntfs_write.front().encode();
+        boost::asio::async_write(socket_,
+                boost::asio::buffer(new_message, new_message.size()),
+                        [this](boost::system::error_code ec, std::size_t /*length*/)
+                        {
+                            if (!ec)
+                            {
+                                ntfs_write.pop_front();
+                                if (!ntfs_write.empty())
+                                {
+                                    do_write();
+                                }
+                            } else {
+                                console::print_notification("Smth goes wrong with sending");
+                                socket_.close();
+                            }
+                        });
+    }
+
+
+    boost::asio::streambuf buffer_;
+    Notification ntf;
+    std::deque<Notification> ntfs_write;
 
     boost::asio::io_service& io_service_;
     tcp::socket socket_;
@@ -53,7 +143,12 @@ int main(int argc, char* argv[]) {
 
         std::thread t([&io_service](){ io_service.run(); });
 
-        // TODO: logic for input reading
+        c.write(console::read_credentials());
+        std::string text;
+        // FIXME: each new notification will tear current user input
+        while (std::getline(std::cin, text)) {
+            c.write(Notification::create(text));
+        }
 
         c.close();
         t.join();
