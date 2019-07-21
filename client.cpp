@@ -15,7 +15,7 @@ namespace console {
         std::cout << "Password: ";
         std::getline(std::cin, password);
 
-        return {login, "", password};
+        return {login, "password", password};
     }
 
     void print_notification(std::string message) {
@@ -75,9 +75,9 @@ private:
                         // all (disconnecting) notification logic provided here
                         bool leave;
                         try {
-                            std::string str(
-                                    (std::istreambuf_iterator<char>(&buffer_)),
-                                    std::istreambuf_iterator<char>());
+                            std::istream is(&buffer_);
+                            std::string str;
+                            std::getline(is, str);
 
                             ntf.update(str);
                             leave = ntf.get_command() == NTFCommand::KICK;
@@ -151,6 +151,8 @@ int main(int argc, char* argv[]) {
         c.write(console::read_credentials(login));
         // FIXME: each new notification will tear current user input
         while (std::getline(std::cin, text)) {
+            // exit from the loop
+            if (text.empty()) break;
             c.write({login, text});
         }
 
