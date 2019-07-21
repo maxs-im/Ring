@@ -8,17 +8,17 @@
 
 using boost::asio::ip::tcp;
 
-class chat_connection : public std::enable_shared_from_this<chat_connection> {
+class chat_member {
 public:
-    std::string get_login();
-    void deliver(const Notification& ntf);
+    virtual std::string get_login() = 0;
+    virtual void deliver(const Notification& ntf) = 0;
 };
 
 class chat_room {
-    using ptr_user = std::shared_ptr<chat_connection>;
+    using ptr_user = std::shared_ptr<chat_member>;
 public:
 
-    void verify(ptr_user user, const Notification& ntf) throw() {
+    void verify(ptr_user user, const Notification& ntf) {
         if (ntf.get_command() == "password" &&
             ntf.get_message() == PASSWORD_)
         {
@@ -84,7 +84,8 @@ private:
 };
 
 class chat_connection
-    : public std::enable_shared_from_this<chat_connection>
+    :   public chat_member,
+        public std::enable_shared_from_this<chat_connection>
 {
 public:
     chat_connection(tcp::socket&& socket, chat_room& room)
@@ -115,14 +116,6 @@ private:
 
     void close_connection(std::string info = "") {
         room_.leave(shared_from_this(), info);
-    }
-
-    bool check_validation() {
-        try {
-            room_.verify(ntf_.get_message()))
-        } catch (std::runtime_error& e) {
-            close_connection(e.what());
-        }
     }
 
     void do_write()
@@ -162,12 +155,14 @@ private:
 
                             ntf_.update(str);
 
+                            // check validation
                             if (login_.empty()) {
                                 // will check only once
                                 try {
                                     room_.verify(shared_from_this(), ntf_);
                                 } catch (std::exception e) {
                                     close_connection(e.what());
+                                    return;
                                 }
                             }
                             ntf_.update_author(login_);
