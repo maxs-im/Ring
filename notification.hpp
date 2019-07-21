@@ -49,7 +49,7 @@ public:
         return {author, command, message};
     }
 
-    std::string get_message() const {
+    std::string get_original_message() const {
         // TODO: finish with more situation info + names
         if (command_.empty()) {
             return message_;
@@ -80,6 +80,13 @@ public:
         author_ = author;
     }
 
+
+    std::string get_author() {
+        return author_;
+    }
+    std::string get_command() {
+        return command_;
+    }
 private:
     std::string author_, command_, message_;
 };
