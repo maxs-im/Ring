@@ -2,12 +2,9 @@
 #include <deque>
 #include <set>
 #include <memory>
-#include <exception>
+#include <stdexcept>
 #include <boost/asio.hpp>
 #include "notification.hpp"
-
-// TODO: maybe better to return const std::string& ?
-// TODO: remove login from server
 
 using boost::asio::ip::tcp;
 
@@ -15,13 +12,6 @@ class chat_connection : public std::enable_shared_from_this<chat_connection> {
 public:
     std::string get_login();
     void deliver(const Notification& ntf);
-};
-
-struct chat_exception : public std::exception {
-    std::string info;
-    chat_exception(std::string s) : info(std::move(s)) {}
-    ~chat_exception() throw () {}
-    char const* what() const throw() { return info.c_str(); };
 };
 
 class chat_room {
@@ -33,21 +23,23 @@ public:
             ntf.get_message() == PASSWORD_)
         {
             auto new_user = ntf.get_author();
-            for (const auto p : participants_) {
+            for (const auto& p : participants_) {
                 if (p->get_login() == new_user)
-                    throw chat_exception("Duplicate login");
+                    throw std::runtime_error("Duplicate login");
             }
 
             join_(user);
         } else {
-            throw chat_exception("Wrong password");
+            throw std::runtime_error("Wrong password");
         }
     }
 
-    void leave(ptr_user user, std::string info) {
+    void leave(ptr_user user, const std::string& info) {
         participants_.erase(user);
         broadcast(Notification("", "leave", user->get_login()));
         user->deliver(Notification("", "kick", info));
+
+        std::cout << "DISCONNECTED->"<< user->get_login() << ":" << info << "\n";
     }
 
     void broadcast(const Notification& ntf) {
@@ -80,10 +72,12 @@ private:
         // join current
         for (const auto& ntf : recent_ntfs_)
             user->deliver(ntf);
+
+        std::cout << "CONNECTED->"<< user->get_login() << "\n";
     }
 
-    const char* PASSWORD_ = "qwerty",
-                ADMIN_LOGIN = "Admin";
+    const char *PASSWORD_ = "qwerty",
+                *ADMIN_LOGIN = "Admin";
     std::set<ptr_user> participants_;
     enum { max_recent_msgs = 100 };
     std::deque<Notification> recent_ntfs_;
@@ -120,16 +114,14 @@ public:
 private:
 
     void close_connection(std::string info = "") {
-        //TODO: move to room
-        //std::cerr << "DISCONNECTED->"<< login_ << (info.empty() ? "" : info) << "\n";
         room_.leave(shared_from_this(), info);
     }
 
     bool check_validation() {
         try {
             room_.verify(ntf_.get_message()))
-        } catch (...) {
-            close_connection("Duplicate login");
+        } catch (std::runtime_error& e) {
+            close_connection(e.what());
         }
     }
 
