@@ -10,9 +10,6 @@
 #include <functional>
 #include <boost/asio.hpp>
 
-// TODO: tmp, remove
-#include <iostream>
-
 class ChatClient
 {
 public:
@@ -45,10 +42,5 @@ private:
     boost::asio::io_service& io_service_;
     boost::asio::ip::tcp::socket socket_;
 };
-
-// Utils for Client side
-namespace console {
-    void print_notification(std::string message);
-}
 
 #endif //RING_CLIENT_HPP

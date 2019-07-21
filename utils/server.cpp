@@ -136,7 +136,6 @@ void ServerConnection::read_notifications() {
               {
                   if (!ec) {
                       try {
-                          // TODO: change buffer
                           std::istream is(&buffer_);
                           std::string str;
                           std::getline(is, str);
