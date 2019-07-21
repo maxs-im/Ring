@@ -7,18 +7,19 @@
 using boost::asio::ip::tcp;
 
 namespace console {
-    Notification read_credentials() {
-        std::string login, password;
+    Notification read_credentials(std::string& login) {
+        std::string password;
         std::cout << "Login: ";
         while (login.empty()) std::getline(std::cin, login);
 
         std::cout << "Password: ";
         std::getline(std::cin, password);
 
-        return {login, "credentials", password};
+        return {login, "password", password};
     }
 
     void print_notification(std::string message) {
+        // TODO: prettify
         std::cout << message << "\n";
     }
 }
@@ -71,6 +72,7 @@ private:
                 {
                     if (!ec)
                     {
+                        // all (disconnecting) notification logic provided here
                         bool leave;
                         try {
                             std::string str(
@@ -78,8 +80,9 @@ private:
                                     std::istreambuf_iterator<char>());
 
                             ntf.update(str);
-                            leave = ntf.is_system() && ntf.is_banned();
-                            console::print_notification(ntf.get_message());
+                            leave = ntf.get_command() == "kick";
+                            console::print_notification(
+                                    ntf.decode());
                         }
                         catch (...) {
                             leave = true;
@@ -92,6 +95,7 @@ private:
                             read_notifications();
                         }
                     } else {
+                        console::print_notification("Bad data received");
                         socket_.close();
                     }
                 });
@@ -143,11 +147,11 @@ int main(int argc, char* argv[]) {
 
         std::thread t([&io_service](){ io_service.run(); });
 
-        c.write(console::read_credentials());
-        std::string text;
+        std::string text, login;
+        c.write(console::read_credentials(login));
         // FIXME: each new notification will tear current user input
         while (std::getline(std::cin, text)) {
-            c.write(Notification::create(text));
+            c.write({login, text});
         }
 
         c.close();

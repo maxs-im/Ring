@@ -12,12 +12,25 @@ class Notification {
 public:
     enum { DELIMITER = '\n' };
 
-    Notification(){}
+    Notification() = default;
 
     Notification(std::string author, std::string command, std::string message)
                  : author_(std::move(author)),
                  command_(std::move(command)),
                  message_(std::move(message)) {};
+
+    Notification(std::string author, const std::string& text)
+        : author_(std::move(author))
+    {
+        std::smatch m;
+        std::regex rgx ("@([^\\s]+) (.*)");
+        if (std::regex_search(text, m, rgx)) {
+            command_ = m[0].str();
+            message_ = m[1].str();
+        } else {
+            message_ = text;
+        }
+    }
 
     void update(const std::string& str) {
         std::smatch m;
@@ -33,23 +46,7 @@ public:
         }
     }
 
-    static Notification create(const std::string& text,
-            const std::string& author = "")
-    {
-        std::string command, message;
-        std::smatch m;
-        std::regex rgx ("@([^\\s]+) (.*)");
-        if (std::regex_search(text, m, rgx)) {
-            command = m[0].str();
-            message = m[1].str();
-        } else {
-            message = text;
-        }
-
-        return {author, command, message};
-    }
-
-    std::string get_original_message() const {
+    std::string decode() const {
         // TODO: finish with more situation info + names
         if (command_.empty()) {
             return message_;
@@ -66,14 +63,6 @@ public:
 
     bool is_admin() const {
         return author_ == "Admin";
-    }
-
-    bool is_system() const {
-        return author_.empty();
-    }
-
-    bool is_banned() const {
-        return command_ == "kick" || command_ == "password";
     }
 
     void update_author(const std::string& author) {
