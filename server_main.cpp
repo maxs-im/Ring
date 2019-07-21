@@ -1,3 +1,7 @@
+//
+// Entrance to the server application
+//
+
 #include <iostream>
 #include <boost/asio.hpp>
 #include "utils/server.hpp"

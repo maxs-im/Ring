@@ -1,3 +1,7 @@
+//
+// Entrance to the client application
+//
+
 #include <iostream>
 #include <thread>
 #include <boost/asio.hpp>
