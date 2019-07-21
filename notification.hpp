@@ -26,8 +26,8 @@ public:
         std::smatch m;
         std::regex rgx ("@([^\\s]+) (.*)");
         if (std::regex_search(text, m, rgx)) {
-            command_ = m[0].str();
-            message_ = m[1].str();
+            command_ = m[1].str();
+            message_ = m[2].str();
         } else {
             message_ = text;
         }
@@ -38,9 +38,9 @@ public:
         std::regex rgx ("(.*) @([^\\s]*) (.*)");
 
         if (std::regex_search(str, m, rgx)) {
-            author_ = m[0];
-            command_ = m[1];
-            message_ = m[2];
+            author_ = m[1];
+            command_ = m[2];
+            message_ = m[3];
         } else {
             // TODO: prettify
             throw;
@@ -77,7 +77,8 @@ private:
 namespace NTFCommand {
     const char *JOIN = "join",
             *LEAVE = "leave",
-            *KICK = "kick";
+            *KICK = "kick",
+            *PASSWORD = "password";
 
     std::string decode_notification(const Notification& ntf) {
         if (ntf.get_author().empty()) {
