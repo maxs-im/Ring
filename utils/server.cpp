@@ -133,9 +133,9 @@ void ServerConnection::read_notifications() {
                   if (!ec) {
                       try {
                           // TODO: change buffer
-                          std::string str(
-                                  (std::istreambuf_iterator<char>(&buffer_)),
-                                  std::istreambuf_iterator<char>());
+                          std::istream is(&buffer_);
+                          std::string str;
+                          std::getline(is, str);
 
                           ntf_.update(str);
 

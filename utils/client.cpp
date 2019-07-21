@@ -67,6 +67,7 @@ void ChatClient::read_notifications() {
                           std::getline(is, str);
 
                           ntf.update(str);
+
                           leave = ntf.get_command() == NTFCommand::KICK;
                           console::print_notification(
                                   NTFCommand::decode_notification(ntf));
