@@ -11,6 +11,7 @@ using boost::asio::ip::tcp;
 class chat_member {
 public:
     virtual std::string get_login() = 0;
+    virtual void set_login(const std::string& str) = 0;
     virtual void deliver(const Notification& ntf) = 0;
 };
 
@@ -24,21 +25,23 @@ public:
             auto new_user = ntf.get_author();
             for (const auto& p : participants_) {
                 if (p->get_login() == new_user)
-                    throw std::runtime_error("Duplicate login");
+                    throw std::invalid_argument("Duplicate login");
             }
-
+            user->set_login(new_user);
             join_(user);
         } else {
-            throw std::runtime_error("Wrong password");
+            throw std::invalid_argument("Wrong password");
         }
     }
 
     void leave(ptr_user user, const std::string& info) {
-        participants_.erase(user);
-        broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
         user->deliver(Notification("", NTFCommand::KICK, info));
 
-        std::cout << "DISCONNECTED->"<< user->get_login() << ":" << info << "\n";
+        if (participants_.erase(user)) {
+            broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
+            std::cout << "DISCONNECTED->" << user->get_login() << ":" << info
+                      << "\n";
+        }
     }
 
     void broadcast(const Notification& ntf) {
@@ -95,10 +98,6 @@ public:
     {
     }
 
-    std::string get_login() {
-        return login_;
-    }
-
     void start()
     {
         read_notifications();
@@ -112,6 +111,14 @@ public:
         {
             do_write();
         }
+    }
+
+    std::string get_login() {
+        return login_;
+    }
+
+    void set_login(const std::string& str) {
+        login_ = str;
     }
 private:
 
@@ -145,7 +152,7 @@ private:
 
     void read_notifications() {
         boost::asio::async_read_until(socket_, buffer_, Notification::DELIMITER,
-                [this](boost::system::error_code ec,
+                [this, self = shared_from_this()](boost::system::error_code ec,
                         std::size_t /*length*/)
                 {
                     if (!ec) {
@@ -161,18 +168,18 @@ private:
                                 // will check only once
                                 try {
                                     room_.verify(shared_from_this(), ntf_);
-                                } catch (std::exception e) {
+                                } catch (std::exception& e) {
                                     close_connection(e.what());
                                     return;
                                 }
+                            } else {
+                                room_.broadcast(ntf_);
                             }
-                            ntf_.update_author(login_);
 
-                            room_.broadcast(ntf_);
                             read_notifications();
                         }
                         catch (...) {
-                            close_connection("Bad data sended");
+                            close_connection("Invalid data sent");
                             return;
                         }
                     } else {
