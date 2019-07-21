@@ -32,7 +32,8 @@ void ChatRoom::leave(ptr_user user, const std::string& info) {
 
     if (participants_.erase(user)) {
         broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
-        fn_notify_("DISCONNECTED->" + user->get_login() + ":" + info);
+        if (fn_notify_)
+            fn_notify_("DISCONNECTED->" + user->get_login() + ":" + info);
     }
 }
 
@@ -68,7 +69,8 @@ void ChatRoom::join_(ptr_user user) {
     for (const auto& ntf : recent_ntfs_)
         user->deliver(ntf);
 
-    fn_notify_("CONNECTED->" + user->get_login());
+    if (fn_notify_)
+        fn_notify_("CONNECTED->" + user->get_login());
 }
 
 ServerConnection::ServerConnection(tcp::socket&& socket, ChatRoom& room)
