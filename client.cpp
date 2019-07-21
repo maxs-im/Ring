@@ -15,7 +15,7 @@ namespace console {
         std::cout << "Password: ";
         std::getline(std::cin, password);
 
-        return {login, "password", password};
+        return {login, "", password};
     }
 
     void print_notification(std::string message) {
@@ -80,9 +80,9 @@ private:
                                     std::istreambuf_iterator<char>());
 
                             ntf.update(str);
-                            leave = ntf.get_command() == "kick";
+                            leave = ntf.get_command() == NTFCommand::KICK;
                             console::print_notification(
-                                    ntf.decode());
+                                    NTFCommand::decode_notification(ntf));
                         }
                         catch (...) {
                             leave = true;

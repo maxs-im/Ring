@@ -7,6 +7,7 @@
 
 #include <regex>
 #include <string>
+#include <map>
 
 class Notification {
 public:
@@ -15,12 +16,12 @@ public:
     Notification() = default;
 
     Notification(std::string author, std::string command, std::string message)
-                 : author_(std::move(author)),
-                 command_(std::move(command)),
-                 message_(std::move(message)) {};
+            : author_(std::move(author)),
+              command_(std::move(command)),
+              message_(std::move(message)) {};
 
     Notification(std::string author, const std::string& text)
-        : author_(std::move(author))
+            : author_(std::move(author))
     {
         std::smatch m;
         std::regex rgx ("@([^\\s]+) (.*)");
@@ -46,19 +47,9 @@ public:
         }
     }
 
-    std::string decode() const {
-        // TODO: finish with more situation info + names
-        if (command_.empty()) {
-            return message_;
-        } else {
-            return "@" + command_ + " " + message_;
-        }
-
-    }
-
     std::string encode() const {
         return author_ + " @" + command_ + " " + message_ +
-            static_cast<char>(DELIMITER);
+               static_cast<char>(DELIMITER);
     }
 
     bool is_admin() const {
@@ -82,5 +73,30 @@ public:
 private:
     std::string author_, command_, message_;
 };
+
+namespace NTFCommand {
+    const char *JOIN = "join",
+            *LEAVE = "leave",
+            *KICK = "kick";
+
+    std::string decode_notification(const Notification& ntf) {
+        if (ntf.get_author().empty()) {
+            // system case
+            auto cmd(ntf.get_command());
+
+            if (JOIN == cmd)
+                return "\tGreet " + ntf.get_message() + " in chat";
+            if (LEAVE == cmd)
+                return "\t" + ntf.get_message() + " left chat";
+            if (KICK == cmd)
+                return "\tDISCONNECTED: " + ntf.get_message();
+            return "\t----->" + ntf.get_message() + "<-----";
+        } else {
+            return ntf.get_author() + ": " +
+                   (ntf.get_command().empty() ? "" : "@" + ntf.get_command() + " ") +
+                   ntf.get_message();
+        }
+    }
+}
 
 #endif //RING_NOTIFICATION_HPP

@@ -19,8 +19,7 @@ class chat_room {
 public:
 
     void verify(ptr_user user, const Notification& ntf) {
-        if (ntf.get_command() == "password" &&
-            ntf.get_message() == PASSWORD_)
+        if (ntf.get_message() == PASSWORD_)
         {
             auto new_user = ntf.get_author();
             for (const auto& p : participants_) {
@@ -36,8 +35,8 @@ public:
 
     void leave(ptr_user user, const std::string& info) {
         participants_.erase(user);
-        broadcast(Notification("", "leave", user->get_login()));
-        user->deliver(Notification("", "kick", info));
+        broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
+        user->deliver(Notification("", NTFCommand::KICK, info));
 
         std::cout << "DISCONNECTED->"<< user->get_login() << ":" << info << "\n";
     }
@@ -45,7 +44,7 @@ public:
     void broadcast(const Notification& ntf) {
         // notification logic provided here
         if (ntf.get_author() == ADMIN_LOGIN) {
-            if (ntf.get_command() == "kick") {
+            if (ntf.get_command() == NTFCommand::KICK) {
                 auto it = std::find_if(participants_.begin(), participants_.end(),
                         [s = ntf.get_message()](const ptr_user item)
                         { return item->get_login() == s; });
@@ -60,14 +59,16 @@ public:
         while (recent_ntfs_.size() > max_recent_msgs)
             recent_ntfs_.pop_front();
 
-        for (const auto p : participants_)
+        for (const auto p : participants_) {
+            // here we can ignore back-sending for author
             p->deliver(ntf);
+        }
     }
 
 private:
     void join_(ptr_user user) {
         // notify members about new user
-        broadcast(Notification("", "join", user->get_login()));
+        broadcast(Notification("", NTFCommand::JOIN, user->get_login()));
         participants_.insert(user);
         // join current
         for (const auto& ntf : recent_ntfs_)
