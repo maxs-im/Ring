@@ -16,7 +16,8 @@ int main(int argc, char* argv[]) {
         }
 
         boost::asio::io_service io_service;
-        ChatServer server(io_service, std::atoi(argv[1]));
+        ChatServer server(io_service, std::atoi(argv[1]),
+                [](const std::string& s){ std::cout << s << "\n"; });
 
         io_service.run();
     }

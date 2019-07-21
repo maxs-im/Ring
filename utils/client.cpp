@@ -4,8 +4,6 @@
 
 #include "client.hpp"
 
-#include <iostream>
-
 using boost::asio::ip::tcp;
 
 ChatClient::ChatClient(boost::asio::io_service& io_service,

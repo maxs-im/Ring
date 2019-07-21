@@ -4,10 +4,13 @@
 
 #include "server.hpp"
 
-#include <iostream>
 #include <boost/asio.hpp>
 
 using boost::asio::ip::tcp;
+
+ChatRoom::ChatRoom(const std::function<void(const std::string&)>& fn_notify)
+    : fn_notify_(fn_notify)
+{}
 
 void ChatRoom::verify(ptr_user user, const Notification& ntf) {
     if (ntf.get_message() == PASSWORD_)
@@ -29,8 +32,7 @@ void ChatRoom::leave(ptr_user user, const std::string& info) {
 
     if (participants_.erase(user)) {
         broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
-        std::cout << "DISCONNECTED->" << user->get_login() << ":" << info
-                  << "\n";
+        fn_notify_("DISCONNECTED->" + user->get_login() + ":" + info);
     }
 }
 
@@ -66,7 +68,7 @@ void ChatRoom::join_(ptr_user user) {
     for (const auto& ntf : recent_ntfs_)
         user->deliver(ntf);
 
-    std::cout << "CONNECTED->"<< user->get_login() << "\n";
+    fn_notify_("CONNECTED->" + user->get_login());
 }
 
 ServerConnection::ServerConnection(tcp::socket&& socket, ChatRoom& room)
@@ -168,9 +170,12 @@ void ServerConnection::read_notifications() {
 // --------------------------- ChatServer ---------------------------
 
 ChatServer::ChatServer(boost::asio::io_service& io_service,
-            const unsigned int port)
+            const unsigned int port,
+            std::function<void(const std::string&)> fn_notify)
         : acceptor_(io_service, tcp::endpoint(tcp::v4(), port)),
-          socket_(io_service)
+          socket_(io_service),
+          fn_notify_(std::move(fn_notify)),
+          room_({fn_notify_})
 {
     start_accept();
 }

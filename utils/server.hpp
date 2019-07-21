@@ -17,6 +17,8 @@ class ServerConnection;
 class ChatRoom {
     using ptr_user = std::shared_ptr<ServerConnection>;
 public:
+    ChatRoom(const std::function<void(const std::string&)>& fn_notify);
+
     // verify credentials -> and then join to chat
     void verify(ptr_user user, const Notification& ntf);
 
@@ -27,6 +29,9 @@ public:
 
 private:
     void join_(ptr_user user);
+
+    // handle important messages from chat room
+    const std::function<void(const std::string&)>& fn_notify_;
 
     std::set<ptr_user> participants_;
     std::deque<Notification> recent_ntfs_;
@@ -76,10 +81,14 @@ class ChatServer
 {
 public:
     ChatServer(boost::asio::io_service& io_service,
-                const unsigned int port);
+                const unsigned int port,
+                std::function<void(const std::string&)> fn_notify);
 
 private:
     void start_accept();
+
+    // handle important messages inside server and chat room
+    const std::function<void(const std::string&)> fn_notify_;
 
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::asio::ip::tcp::socket socket_;
