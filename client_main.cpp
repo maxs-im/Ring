@@ -31,7 +31,8 @@ int main(int argc, char* argv[]) {
 
         boost::asio::ip::tcp::resolver resolver(io_service);
         auto endpoint_iterator = resolver.resolve({ argv[1], argv[2] });
-        ChatClient c(io_service, endpoint_iterator);
+        ChatClient c(io_service, endpoint_iterator,
+                [](const std::string& s){ std::cout << s << "\n"; });
 
         std::thread t([&io_service](){ io_service.run(); });
 

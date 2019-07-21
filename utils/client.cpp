@@ -9,9 +9,11 @@
 using boost::asio::ip::tcp;
 
 ChatClient::ChatClient(boost::asio::io_service& io_service,
-            tcp::resolver::iterator endpoint_iterator)
+            tcp::resolver::iterator endpoint_iterator,
+            std::function<void(const std::string&)> fn_notify)
         : io_service_(io_service),
-          socket_(io_service)
+          socket_(io_service),
+          fn_notify_(std::move(fn_notify))
 {
     do_connect(std::move(endpoint_iterator));
 }
@@ -69,12 +71,11 @@ void ChatClient::read_notifications() {
                           ntf.update(str);
 
                           leave = ntf.get_command() == NTFCommand::KICK;
-                          console::print_notification(
-                                  NTFCommand::decode_notification(ntf));
+                          fn_notify_(NTFCommand::decode_notification(ntf));
                       }
                       catch (...) {
                           leave = true;
-                          console::print_notification("Smth goes wrong with receiving");
+                          fn_notify_("Smth goes wrong with receiving");
                       }
 
                       if (leave) {
@@ -83,7 +84,7 @@ void ChatClient::read_notifications() {
                           read_notifications();
                       }
                   } else {
-                      console::print_notification("Bad data received");
+                      fn_notify_("Bad data received");
                       socket_.close();
                   }
               });
@@ -103,26 +104,8 @@ void ChatClient::do_write() {
                          do_write();
                      }
                  } else {
-                     console::print_notification("Smth goes wrong with sending");
+                     fn_notify_("Smth goes wrong with sending");
                      socket_.close();
                  }
              });
-}
-
-namespace console {
-    Notification read_credentials(std::string& login) {
-        std::string password;
-        std::cout << "Login: ";
-        while (login.empty()) std::getline(std::cin, login);
-
-        std::cout << "Password: ";
-        std::getline(std::cin, password);
-
-        return ChatClient::credentials2ntf(login, password);
-    }
-
-    void print_notification(std::string message) {
-        // TODO: prettify
-        std::cout << message << "\n";
-    }
 }

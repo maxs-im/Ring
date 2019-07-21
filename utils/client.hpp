@@ -7,6 +7,7 @@
 
 #include "notification.hpp"
 #include <deque>
+#include <functional>
 #include <boost/asio.hpp>
 
 // TODO: tmp, remove
@@ -16,7 +17,8 @@ class ChatClient
 {
 public:
     ChatClient(boost::asio::io_service& io_service,
-                boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+                boost::asio::ip::tcp::resolver::iterator endpoint_iterator,
+                std::function<void(const std::string&)> fn_notify);
 
     static Notification credentials2ntf(const std::string& login,
             const std::string& password);
@@ -36,6 +38,9 @@ private:
     // buffers for reading and storing current notification
     boost::asio::streambuf buffer_;
     Notification ntf;
+
+    // handle important messages
+    std::function<void(const std::string&)> fn_notify_;
 
     boost::asio::io_service& io_service_;
     boost::asio::ip::tcp::socket socket_;
