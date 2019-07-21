@@ -81,11 +81,14 @@ public:
     }
 
 
-    std::string get_author() {
+    std::string get_author() const {
         return author_;
     }
-    std::string get_command() {
+    std::string get_command() const {
         return command_;
+    }
+    std::string get_message() const {
+        return message_;
     }
 private:
     std::string author_, command_, message_;

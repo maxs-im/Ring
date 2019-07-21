@@ -2,34 +2,88 @@
 #include <deque>
 #include <set>
 #include <memory>
+#include <exception>
 #include <boost/asio.hpp>
 #include "notification.hpp"
 
+// TODO: maybe better to return const std::string& ?
+// TODO: remove login from server
+
 using boost::asio::ip::tcp;
 
-class chat_connection;
+class chat_connection : public std::enable_shared_from_this<chat_connection> {
+public:
+    std::string get_login();
+    void deliver(const Notification& ntf);
+};
 
-using ptr_user = std::shared_ptr<chat_connection>;
-
-// TODO: update author on read
+struct chat_exception : public std::exception {
+    std::string info;
+    chat_exception(std::string s) : info(std::move(s)) {}
+    ~chat_exception() throw () {}
+    char const* what() const throw() { return info.c_str(); };
+};
 
 class chat_room {
+    using ptr_user = std::shared_ptr<chat_connection>;
 public:
-    const char* PASSWORD = "qwerty";
 
-    bool join(ptr_user user) {
-        participants_.insert(user);
+    void verify(ptr_user user, const Notification& ntf) throw() {
+        if (ntf.get_command() == "password" &&
+            ntf.get_message() == PASSWORD_)
+        {
+            auto new_user = ntf.get_author();
+            for (const auto p : participants_) {
+                if (p->get_login() == new_user)
+                    throw chat_exception("Duplicate login");
+            }
+
+            join_(user);
+        } else {
+            throw chat_exception("Wrong password");
+        }
     }
 
-    void leave(ptr_user user) {
+    void leave(ptr_user user, std::string info) {
         participants_.erase(user);
+        broadcast(Notification("", "leave", user->get_login()));
+        user->deliver(Notification("", "kick", info));
     }
 
-    void broadcast(ptr_user user, const Notification& ntf) {
-        // parse command logic
+    void broadcast(const Notification& ntf) {
+        // notification logic provided here
+        if (ntf.get_author() == ADMIN_LOGIN) {
+            if (ntf.get_command() == "kick") {
+                auto it = std::find_if(participants_.begin(), participants_.end(),
+                        [s = ntf.get_message()](const ptr_user item)
+                        { return item->get_login() == s; });
+                if (it != participants_.end()) {
+                    leave(*it, "Kicked by " + ntf.get_author());
+                    return;
+                }
+            }
+        }
+
+        recent_ntfs_.push_back(ntf);
+        while (recent_ntfs_.size() > max_recent_msgs)
+            recent_ntfs_.pop_front();
+
+        for (const auto p : participants_)
+            p->deliver(ntf);
     }
 
 private:
+    void join_(ptr_user user) {
+        // notify members about new user
+        broadcast(Notification("", "join", user->get_login()));
+        participants_.insert(user);
+        // join current
+        for (const auto& ntf : recent_ntfs_)
+            user->deliver(ntf);
+    }
+
+    const char* PASSWORD_ = "qwerty",
+                ADMIN_LOGIN = "Admin";
     std::set<ptr_user> participants_;
     enum { max_recent_msgs = 100 };
     std::deque<Notification> recent_ntfs_;
@@ -43,6 +97,10 @@ public:
             : socket_(std::forward<tcp::socket>(socket)),
             room_(room)
     {
+    }
+
+    std::string get_login() {
+        return login_;
     }
 
     void start()
@@ -59,27 +117,19 @@ public:
             do_write();
         }
     }
-
 private:
 
     void close_connection(std::string info = "") {
         //TODO: move to room
         //std::cerr << "DISCONNECTED->"<< login_ << (info.empty() ? "" : info) << "\n";
-        room_.leave(shared_from_this());
+        room_.leave(shared_from_this(), info);
     }
 
     bool check_validation() {
-        if (ntf_.get_command() == room_.PASSWORD) {
-            login_ = ntf_.get_author();
-            if (room_.join(shared_from_this()))
-                return true;
-            else {
-                close_connection("Duplicate login");
-                return false;
-            }
-        } else {
-            close_connection("Wrong password");
-            return false;
+        try {
+            room_.verify(ntf_.get_message()))
+        } catch (...) {
+            close_connection("Duplicate login");
         }
     }
 
@@ -103,7 +153,6 @@ private:
                      else
                      {
                          close_connection("Something goes wrong with reading");
-                         room_.leave(shared_from_this());
                      }
                  });
     }
@@ -123,12 +172,15 @@ private:
 
                             if (login_.empty()) {
                                 // will check only once
-                                if (!check_validation())
-                                    return;
+                                try {
+                                    room_.verify(shared_from_this(), ntf_);
+                                } catch (std::exception e) {
+                                    close_connection(e.what());
+                                }
                             }
                             ntf_.update_author(login_);
 
-                            room_.broadcast(shared_from_this(), ntf_);
+                            room_.broadcast(ntf_);
                             read_notifications();
                         }
                         catch (...) {
