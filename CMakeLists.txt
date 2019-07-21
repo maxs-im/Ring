@@ -3,8 +3,8 @@ project(Ring)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Client client.cpp notification.hpp)
-add_executable(Server server.cpp notification.hpp)
+add_executable(Client client_main.cpp notification.hpp)
+add_executable(Server server_main.cpp notification.hpp)
 
 find_package(Boost 1.65.1.0 REQUIRED system thread)
 message(status "** Boost Include: ${Boost_INCLUDE_DIR}")
