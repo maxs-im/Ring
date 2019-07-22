@@ -3,7 +3,7 @@
 Simple chat server and client using TCP.
 Use console UI with simple std::cout/cin(or similar). UI logic should be as simple as possible and does not influence score in this task.
 
-__Requirements__:
+__Task requirements__:
 * Client at startup should setup its name and server password. Server side can hardcode password for simplicity. If password is wrong server disconnects client with message visible at client side.
 * When client joins server, message with client name is broadcasted
 * Client should be able to send messages and see received messages from other clients with their names
@@ -18,11 +18,48 @@ __Implementation details__:
 * Provide detailes description how to build and start your project
 * Write unit tests using gtest google test framework
 
+## Usage
+
+Use your terminal where the binaries are located.
+
+__Server__: Firstly, start server with specified listening port:
+```commandline
+Server 1025
+```
+
+__Client__: Start clients as much as you want. 
+You should specify server's host (_localhost_ - for your computer) and listening port for each one.
+
+```commandline
+Client localhost 1025
+```
+After connecting you should set your login and confirm it with a password. 
+Note that your login should be unique.
+
+You can be the only admin - set your login as 'Admin'. 
+Then you can disable other users:
+
+```commandline
+@kick Some name 
+```
+
+__Note__: Password for connection is **_qwerty_**.
+
+Here is an example of conversation:
+
+![alt-Image](example.jpg "Here you can see different situations")
+
 ## Author
 
 **Maksym Halchenko** - [maxs-im](https://github.com/maxs-im)
 
 ## Realization
+
+__Requirements__:
+* CMake >3.14
+* C++17
+* boost C++ library >1.65
+* Google Test
 
 Task should be finished in two weeks.
 
