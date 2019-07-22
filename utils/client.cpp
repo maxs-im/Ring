@@ -68,14 +68,17 @@ void ChatClient::read_notifications() {
 
                           ntf.update(str);
 
-                          leave = ntf.get_command() == NTFCommand::KICK;
+                          leave = ntf.get_author() == NTFCommand::SYSTEM_LOGIN &&
+                                  ntf.get_command() == NTFCommand::KICK;
                           if (fn_notify_)
                               fn_notify_(NTFCommand::decode_notification(ntf));
                       }
                       catch (...) {
                           leave = true;
-                          if (fn_notify_)
-                              fn_notify_("Smth goes wrong with receiving");
+                          if (fn_notify_) {
+                              fn_notify_("Smth goes wrong with receiving: " +
+                                      ec.message());
+                          }
                       }
 
                       if (leave) {
@@ -84,8 +87,10 @@ void ChatClient::read_notifications() {
                           read_notifications();
                       }
                   } else {
-                      if (fn_notify_)
-                          fn_notify_("Bad data received");
+                      if (fn_notify_) {
+                          fn_notify_("Bad data received: " +
+                                  ec.message());
+                      }
                       socket_.close();
                   }
               });
@@ -105,8 +110,10 @@ void ChatClient::do_write() {
                          do_write();
                      }
                  } else {
-                     if (fn_notify_)
-                         fn_notify_("Smth goes wrong with sending");
+                     if (fn_notify_) {
+                         fn_notify_("Smth goes wrong with sending: " +
+                                    ec.message());
+                     }
                      socket_.close();
                  }
              });

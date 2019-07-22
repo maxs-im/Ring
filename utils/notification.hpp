@@ -35,6 +35,7 @@ namespace NTFCommand {
             *LEAVE = "leave",
             *KICK = "kick",
             *PASSWORD = "password";
+    constexpr const char* SYSTEM_LOGIN = "";
 
     // original message with adding author in prefix
     std::string decode_notification(const Notification& ntf);

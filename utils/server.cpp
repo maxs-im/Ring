@@ -28,10 +28,12 @@ void ChatRoom::verify(ptr_user user, const Notification& ntf) {
 }
 
 void ChatRoom::leave(ptr_user user, const std::string& info) {
-    user->deliver(Notification("", NTFCommand::KICK, info));
+    user->deliver(Notification(NTFCommand::SYSTEM_LOGIN, NTFCommand::KICK,
+            info));
 
     if (participants_.erase(user)) {
-        broadcast(Notification("", NTFCommand::LEAVE, user->get_login()));
+        broadcast(Notification(NTFCommand::SYSTEM_LOGIN, NTFCommand::LEAVE,
+                user->get_login()));
         if (fn_notify_)
             fn_notify_("DISCONNECTED->" + user->get_login() + ":" + info);
     }
@@ -63,7 +65,8 @@ void ChatRoom::broadcast(const Notification& ntf) {
 
 void ChatRoom::join_(ptr_user user) {
     // notify members about new user
-    broadcast(Notification("", NTFCommand::JOIN, user->get_login()));
+    broadcast(Notification(NTFCommand::SYSTEM_LOGIN, NTFCommand::JOIN,
+            user->get_login()));
     participants_.insert(user);
     // join current
     for (const auto& ntf : recent_ntfs_)
@@ -124,7 +127,8 @@ void ServerConnection::do_write()
                  }
                  else
                  {
-                     close_connection("Something goes wrong with reading");
+                     close_connection("Something goes wrong with reading: " +
+                             ec.message());
                  }
              });
 }
@@ -162,7 +166,8 @@ void ServerConnection::read_notifications() {
                           return;
                       }
                   } else {
-                      close_connection("Something goes wrong with reading");
+                      close_connection("Something goes wrong with reading: " +
+                              ec.message());
                   }
               });
 }

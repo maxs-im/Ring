@@ -65,7 +65,7 @@ private:
 
     // user's(connection) name like id
     // Note: default value for non-validated user. Also "system" on client side
-    std::string login_ = "";
+    std::string login_ = NTFCommand::SYSTEM_LOGIN;
 
     // queue for writing
     std::deque<Notification> ntfs_write;
