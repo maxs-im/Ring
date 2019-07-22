@@ -5,7 +5,7 @@
 #include "../utils/notification.hpp"
 #include "gtest/gtest.h"
 
-//namespace {
+namespace {
     TEST(Notification, Empty)
     {
         Notification ntf;
@@ -57,7 +57,7 @@
         {}
 
         std::string generate_text(const std::string& _c, const std::string& _m) {
-            return "@" + _c + " " + _m;
+            return (_c.empty() ? "" : "@" + _c + " ") + _m;
         }
     };
 
@@ -163,7 +163,7 @@
                     notification_state{"a", "c", "m",
                                        "a @c m\n", "a: @c m"},
                     notification_state{"a", NTFCommand::KICK, "",
-                                       "a @kick \n", "a:"}
+                                       "a @kick \n", "a: @kick "}
             ));
     INSTANTIATE_TEST_CASE_P(EmptyAuthorNotCommand, WithParamsNtf,
             testing::Values(
@@ -187,5 +187,5 @@
                     notification_state{NTFCommand::SYSTEM_LOGIN, NTFCommand::PASSWORD, "m",
                                        " @password m\n", "\t----->m<-----"}
             ));
-//}
+}
 
