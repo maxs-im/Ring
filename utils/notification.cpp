@@ -33,7 +33,7 @@ void Notification::update(const std::string& str) {
         command_ = m[2];
         message_ = m[3];
     } else {
-        throw;
+        throw false;
     }
 }
 
