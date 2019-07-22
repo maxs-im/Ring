@@ -4,7 +4,7 @@ project(Ring)
 set(CMAKE_CXX_STANDARD 17)
 
 #       include Google Tests
-add_executable(Tests tests_main.cpp)
+add_executable(Tests tests_main.cpp Tests/sample.cpp Tests/tests.cpp)
 
 add_subdirectory(lib/googletest-master)
 include_directories(lib/googletest-master/googletest/include)
