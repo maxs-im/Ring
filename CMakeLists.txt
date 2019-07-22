@@ -3,11 +3,24 @@ project(Ring)
 
 set(CMAKE_CXX_STANDARD 17)
 
+#       include Google Tests
+add_executable(Tests tests_main.cpp)
+
+add_subdirectory(lib/googletest-master)
+include_directories(lib/googletest-master/googletest/include)
+include_directories(lib/googletest-master/googlemock/include)
+
+target_link_libraries(Tests gtest gtest_main)
+# ------------------------------------------------------------
+
+#       include applications code
 include_directories("utils/")
 
 add_executable(Client client_main.cpp utils/client.cpp utils/notification.cpp)
 add_executable(Server server_main.cpp utils/server.cpp utils/notification.cpp)
+# ------------------------------------------------------------
 
+#       include boost library
 find_package(Boost 1.65.1.0 REQUIRED system thread)
 message(status "** Boost Include: ${Boost_INCLUDE_DIR}")
 message(status "** Boost Libraries: ${Boost_LIBRARY_DIRS}")
@@ -24,3 +37,4 @@ IF (Boost_FOUND)
     target_link_libraries(Client ${Boost_LIBRARIES})
     target_link_libraries(Server ${Boost_LIBRARIES})
 ENDIF()
+# ------------------------------------------------------------
