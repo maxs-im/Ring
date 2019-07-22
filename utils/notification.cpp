@@ -27,6 +27,7 @@ void Notification::update(const std::string& str) {
     std::smatch m;
     std::regex rgx ("(.*) @([^\\s]*) (.*)");
 
+
     if (std::regex_search(str, m, rgx)) {
         author_ = m[1];
         command_ = m[2];
