@@ -56,10 +56,10 @@ Here is an example of conversation:
 ## Realization
 
 __Requirements__:
-* CMake >3.14
+* CMake >=3.14
 * C++17
-* boost C++ library >1.65
-* Google Test
+* boost C++ library >=1.65
+* Google Test >=1.8
 
 Task should be finished in two weeks.
 
